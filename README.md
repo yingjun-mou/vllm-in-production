@@ -3,6 +3,8 @@ A tiny production-shaped LLM service that uses vLLM as the model server (OpenAI-
 
 # High-level Architecture
 
+
+```
 (Client) ──HTTP──>  Gateway (FastAPI)
                      │  ├─ API key auth
                      │  ├─ rate limits / quotas
@@ -10,3 +12,4 @@ A tiny production-shaped LLM service that uses vLLM as the model server (OpenAI-
                      ▼
                  vLLM Server (OpenAI-compatible API)
                      └─ runs the model (GPU), batching, caching, etc.
+```

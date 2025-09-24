@@ -6,25 +6,3 @@ datasources:
     url: http://prometheus:9090
     isDefault: true
     editable: true
-
-apiVersion: 1
-providers:
-  - name: vLLM Dashboards
-    folder: ''
-    type: file
-    options:
-      path: /etc/grafana/provisioning/dashboards
-
-# Minimal starter dashboard (optional)
-{
-  "title": "vLLM Starter",
-  "schemaVersion": 38,
-  "version": 1,
-  "panels": [
-    { "type": "timeseries", "title": "GPU Utilization", "targets": [{ "expr": "DCGM_FI_DEV_GPU_UTIL" }] },
-    { "type": "timeseries", "title": "GPU Memory Used (MiB)", "targets": [{ "expr": "DCGM_FI_DEV_FB_USED" }] },
-    { "type": "timeseries", "title": "Node CPU %", "targets": [{ "expr": "100 - (avg by(instance) (irate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100)" }] },
-    { "type": "timeseries", "title": "vLLM: In-flight Requests", "targets": [{ "expr": "sum(vllm_num_requests_running)" }] },
-    { "type": "timeseries", "title": "vLLM: Tokens/sec", "targets": [{ "expr": "sum(rate(vllm_tokens_decoded_total[1m]))" }] }
-  ]
-}

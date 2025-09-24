@@ -1,17 +1,15 @@
-version: "3.9"
 name: vllm-gcp-stack
 
 services:
   vllm:
     image: vllm/vllm-openai:v0.9.2
     command: >
-      python -m vllm.entrypoints.openai.api_server
-        --model ${MODEL_ID}
-        --dtype auto
-        --host 0.0.0.0
-        --port 8000
-        --api-key ${API_KEY}
-        --max-model-len ${MAX_MODEL_LEN:-32768}
+      --model ${MODEL_ID}
+      --dtype auto
+      --host 0.0.0.0
+      --port 8000
+      --api-key ${API_KEY}
+      --max-model-len ${MAX_MODEL_LEN:-32768}
     environment:
       - HF_TOKEN=${HF_TOKEN}
     runtime: nvidia
@@ -59,18 +57,17 @@ services:
   node-exporter:
     image: prom/node-exporter:v1.8.2
     pid: host
-    network_mode: host
+    # Keep host mounts; no need for host network because Prometheus scrapes other services
     command:
       - '--path.rootfs=/host'
     volumes:
       - '/:/host:ro,rslave'
+    networks: [monitoring]
 
   cadvisor:
     image: gcr.io/cadvisor/cadvisor:v0.49.1
     privileged: true
-    # No host port — Prometheus scrapes inside the network
-    # ports:
-    #   - "8080:8080"
+    # no host port needed; Prometheus scrapes via service name
     volumes:
       - /:/rootfs:ro
       - /var/run:/var/run:ro

@@ -1,85 +1,85 @@
 version: "3.9"
-runtime: nvidia
-deploy:
-resources:
-reservations:
-devices:
-- capabilities: [gpu]
-ports:
-- "8000:8000"
+name: vllm-gcp-stack
+
+services:
+  vllm:
+    image: vllm/vllm-openai:v0.9.2
+    command: >
+      python -m vllm.entrypoints.openai.api_server
+        --model ${MODEL_ID}
+        --dtype auto
+        --host 0.0.0.0
+        --port 8000
+        --api-key ${API_KEY}
+        --max-model-len ${MAX_MODEL_LEN:-32768}
+    environment:
+      - HF_TOKEN=${HF_TOKEN}
+    runtime: nvidia
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - capabilities: [gpu]
+    ports:
+      - "8000:8000"
+    volumes:
+      - hf-cache:/root/.cache/huggingface
+    networks: [monitoring]
+
+  prometheus:
+    image: prom/prometheus:v2.54.0
+    command: ["--config.file=/etc/prometheus/prometheus.yml"]
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - "9090:9090"
+    networks: [monitoring]
+
+  grafana:
+    image: grafana/grafana:10.4.6
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning
+      - grafana-data:/var/lib/grafana
+    ports:
+      - "3000:3000"
+    depends_on: [prometheus]
+    networks: [monitoring]
+
+  dcgm-exporter:
+    image: nvidia/dcgm-exporter:latest
+    runtime: nvidia
+    pid: "host"
+    ports:
+      - "9400:9400"
+    networks: [monitoring]
+
+  node-exporter:
+    image: prom/node-exporter:v1.8.2
+    pid: host
+    network_mode: host
+    command:
+      - '--path.rootfs=/host'
+    volumes:
+      - '/:/host:ro,rslave'
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.49.1
+    privileged: true
+    ports:
+      - "8080:8080"
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+    networks: [monitoring]
+
 volumes:
-- hf-cache:/root/.cache/huggingface
-networks: [monitoring]
-
-
-prometheus:
-image: prom/prometheus:v2.54.0
-command: ["--config.file=/etc/prometheus/prometheus.yml"]
-volumes:
-- ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-ports:
-- "9090:9090"
-networks: [monitoring]
-
-
-grafana:
-image: grafana/grafana:10.4.6
-environment:
-- GF_SECURITY_ADMIN_USER=admin
-- GF_SECURITY_ADMIN_PASSWORD=admin
-volumes:
-- ./grafana/provisioning:/etc/grafana/provisioning
-- grafana-data:/var/lib/grafana
-ports:
-- "3000:3000"
-depends_on: [prometheus]
-networks: [monitoring]
-
-
-dcgm-exporter:
-image: nvidia/dcgm-exporter:latest
-runtime: nvidia
-pid: "host"
-ports:
-- "9400:9400"
-networks: [monitoring]
-
-
-node-exporter:
-image: prom/node-exporter:v1.8.2
-pid: host
-network_mode: host
-command:
-- '--path.rootfs=/host'
-volumes:
-- '/:/host:ro,rslave'
-
-
-cadvisor:
-image: gcr.io/cadvisor/cadvisor:v0.49.1
-privileged: true
-ports:
-- "8080:8080"
-volumes:
-- /:/rootfs:ro
-- /var/run:/var/run:ro
-- /sys:/sys:ro
-- /var/lib/docker/:/var/lib/docker:ro
-networks: [monitoring]
-
-
-# watchtower:
-# image: containrrr/watchtower
-# command: --interval 60 vllm prom/prometheus grafana/grafana nvidia/dcgm-exporter
-# volumes:
-# - /var/run/docker.sock:/var/run/docker.sock
-# networks: [monitoring]
-
-
-volumes:
-hf-cache:
-grafana-data:
-
+  hf-cache:
+  grafana-data:
 
 networks:
-monitoring:
+  monitoring:

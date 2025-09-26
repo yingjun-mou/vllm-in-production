@@ -1,45 +1,65 @@
 {
-  "id": null,
   "title": "vLLM Overview",
   "schemaVersion": 39,
   "version": 1,
   "panels": [
     {
+      "type": "timeseries",
+      "title": "Tokens/sec (prompt vs generation)",
+      "targets": [
+        { "expr": "sum(rate(vllm:prompt_tokens_total[1m]))", "legendFormat": "prompt tok/s" },
+        { "expr": "sum(rate(vllm:generation_tokens_total[1m]))", "legendFormat": "generation tok/s" }
+      ],
+      "gridPos": {"x":0,"y":0,"w":24,"h":8}
+    },
+    {
+      "type": "timeseries",
+      "title": "Iteration tokens p50 / p95",
+      "targets": [
+        { "expr": "histogram_quantile(0.50, sum(rate(vllm:iteration_tokens_total_bucket[5m])) by (le))", "legendFormat": "p50 iter tokens" },
+        { "expr": "histogram_quantile(0.95, sum(rate(vllm:iteration_tokens_total_bucket[5m])) by (le))", "legendFormat": "p95 iter tokens" }
+      ],
+      "gridPos": {"x":0,"y":8,"w":24,"h":8}
+    },
+    {
       "type": "stat",
-      "title": "Requests/s",
+      "title": "Running requests",
       "targets": [
-        {"expr": "sum(rate(vllm_requests_total[1m]))"}
+        { "expr": "max(vllm:num_requests_running)" }
       ],
-      "gridPos": {"x":0,"y":0,"w":6,"h":4}
+      "gridPos": {"x":0,"y":16,"w":6,"h":4}
     },
     {
-      "type": "timeseries",
-      "title": "Latency p50/p95",
+      "type": "stat",
+      "title": "Queue size (waiting)",
       "targets": [
-        {"expr": "histogram_quantile(0.50, sum(rate(vllm_request_duration_seconds_bucket[5m])) by (le))"},
-        {"expr": "histogram_quantile(0.95, sum(rate(vllm_request_duration_seconds_bucket[5m])) by (le))"}
+        { "expr": "max(vllm:num_requests_waiting)" }
       ],
-      "gridPos": {"x":6,"y":0,"w":18,"h":8}
+      "gridPos": {"x":6,"y":16,"w":6,"h":4}
     },
     {
-      "type": "timeseries",
-      "title": "GPU Utilization",
-      "targets": [{"expr": "avg(nvidia_gpu_utilization)"}],
-      "gridPos": {"x":0,"y":8,"w":12,"h":8}
+      "type": "stat",
+      "title": "GPU KV cache usage %",
+      "targets": [
+        { "expr": "avg(vllm:gpu_cache_usage_perc)" }
+      ],
+      "gridPos": {"x":12,"y":16,"w":6,"h":4}
     },
     {
-      "type": "timeseries",
-      "title": "GPU Memory Used (MiB)",
-      "targets": [{"expr": "avg(nvidia_gpu_memory_used_bytes)/1024/1024"}],
-      "gridPos": {"x":12,"y":8,"w":12,"h":8}
+      "type": "stat",
+      "title": "Preemptions/sec",
+      "targets": [
+        { "expr": "sum(rate(vllm:num_preemptions_total[5m]))" }
+      ],
+      "gridPos": {"x":18,"y":16,"w":6,"h":4}
     },
     {
       "type": "logs",
       "title": "vLLM Logs",
-      "options": {"dedupStrategy":"none"},
-      "targets": [{"expr":"{container=\"vllm\"}"}],
-      "gridPos": {"x":0,"y":16,"w":24,"h":8},
-      "datasource": {"type":"loki","uid":"loki"}
+      "options": { "dedupStrategy": "none" },
+      "targets": [ { "expr": "{container=\"vllm\"}" } ],
+      "gridPos": { "x":0, "y":20, "w":24, "h":8 },
+      "datasource": { "type": "loki", "uid": "loki" }
     }
   ]
 }

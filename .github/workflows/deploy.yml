@@ -1,0 +1,12 @@
+- name: SSH and deploy
+  uses: appleboy/ssh-action@v1.0.3
+  with:
+    host: ${{ secrets.VM_HOST }}
+    username: ${{ secrets.VM_USER }}
+    key: ${{ secrets.VM_SSH_KEY }}
+    script: |
+      cd ~/vllm-in-production
+      git pull --ff-only
+      docker compose --env-file .env pull
+      docker compose --env-file .env up -d
+      docker system prune -f

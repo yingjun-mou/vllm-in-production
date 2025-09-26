@@ -9,18 +9,17 @@ services:
     ports:
       - "${VLLM_PORT:-8000}:8000"
     environment:
-      - VLLM_WORKER_USE_FLASH_ATTENTION=false
       - HF_TOKEN=${HF_TOKEN}
       - VLLM_LOGGING_LEVEL=INFO
       - VLLM_PROMETHEUS_ENABLE=true
     command: >
-      --model ${MODEL_NAME:-Qwen/Qwen2.5-7B-Instruct}
+      --model ${MODEL_NAME:-Qwen/Qwen2.5-1.5B-Instruct}
       --host 0.0.0.0 --port 8000
-      --max-model-len 4096
+      --max-model-len 2048
       --tensor-parallel-size 1
-      --gpu-memory-utilization 0.90
+      --gpu-memory-utilization 0.80
       --enable-prefix-caching
-      --max-num-seqs 32
+      --max-num-seqs 8
     deploy:
       resources:
         reservations:

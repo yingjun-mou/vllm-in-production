@@ -76,7 +76,6 @@ services:
   node_exporter:
     image: prom/node-exporter:latest
     restart: unless-stopped
-    network_mode: "host"
 
   cadvisor:
     image: gcr.io/cadvisor/cadvisor:latest

@@ -21,7 +21,6 @@ services:
       --gpu-memory-utilization 0.90
       --enable-prefix-caching
       --max-num-seqs 32
-      --enable-prometheus
     deploy:
       resources:
         reservations:

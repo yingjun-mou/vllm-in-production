@@ -72,6 +72,7 @@ services:
       - ./provision/loki/promtail-config.yml:/etc/promtail/config.yml:ro
       - /var/log:/var/log:ro
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - promtail-positions:/positions
 
   node_exporter:
     image: prom/node-exporter:latest
@@ -91,4 +92,5 @@ services:
 
 volumes:
   loki-data:
+  promtail-positions:
 

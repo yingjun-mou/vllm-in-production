@@ -1,83 +1,98 @@
 name: vllm-gcp-stack
 
+version: "3.9"
+
 services:
   vllm:
-    image: vllm/vllm-openai:v0.9.2
-    command: >
-      --model ${MODEL_ID}
-      --dtype auto
-      --host 0.0.0.0
-      --port 8000
-      --api-key ${API_KEY}
-      --max-model-len ${MAX_MODEL_LEN:-32768}
+    image: vllm/vllm-openai:latest
+    container_name: vllm
+    restart: unless-stopped
+    ports:
+      - "${VLLM_PORT:-8000}:8000"
     environment:
+      - VLLM_WORKER_USE_FLASH_ATTENTION=false
       - HF_TOKEN=${HF_TOKEN}
-    runtime: nvidia
+      - VLLM_LOGGING_LEVEL=INFO
+      - VLLM_PROMETHEUS_ENABLE=true
+    command: >
+      --model ${MODEL_NAME:-Qwen/Qwen2.5-7B-Instruct}
+      --host 0.0.0.0 --port 8000
+      --max-model-len 4096
+      --tensor-parallel-size 1
+      --gpu-memory-utilization 0.90
+      --enable-prefix-caching
+      --max-num-seqs 32
+      --enable-prometheus
     deploy:
       resources:
         reservations:
           devices:
             - capabilities: [gpu]
-    ports:
-      - "8000:8000"
-    volumes:
-      - hf-cache:/root/.cache/huggingface
-    networks: [monitoring]
+    runtime: nvidia
 
   prometheus:
-    image: prom/prometheus:v2.54.0
-    command: ["--config.file=/etc/prometheus/prometheus.yml"]
+    image: prom/prometheus:latest
+    container_name: prometheus
+    restart: unless-stopped
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --web.enable-lifecycle
     volumes:
-      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./provision/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./provision/prometheus/alerting_rules.yml:/etc/prometheus/alerting_rules.yml:ro
     ports:
-      - "9090:9090"
-    networks: [monitoring]
+      - "${PROM_PORT:-9090}:9090"
 
   grafana:
-    image: grafana/grafana:10.4.6
+    image: grafana/grafana:latest
+    container_name: grafana
+    restart: unless-stopped
     environment:
-      - GF_SECURITY_ADMIN_USER=admin
-      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Viewer
+      - GF_USERS_DEFAULT_THEME=light
     volumes:
-      - ./grafana/provisioning:/etc/grafana/provisioning
-      - grafana-data:/var/lib/grafana
+      - ./provision/grafana/provisioning:/etc/grafana/provisioning
+      - ./provision/grafana/dashboards:/var/lib/grafana/dashboards
     ports:
-      - "3000:3000"
-    depends_on: [prometheus]
-    networks: [monitoring]
+      - "${GRAFANA_PORT:-3000}:3000"
+    depends_on: [prometheus, loki]
 
-  dcgm-exporter:
-    image: nvidia/dcgm-exporter:latest
-    runtime: nvidia
-    pid: "host"
-    ports:
-      - "9400:9400"
-    networks: [monitoring]
-
-  node-exporter:
-    image: prom/node-exporter:v1.8.2
-    pid: host
-    # Keep host mounts; no need for host network because Prometheus scrapes other services
-    command:
-      - '--path.rootfs=/host'
+  loki:
+    image: grafana/loki:2.9.8
+    container_name: loki
+    restart: unless-stopped
+    command: -config.file=/etc/loki/config.yml
     volumes:
-      - '/:/host:ro,rslave'
-    networks: [monitoring]
+      - ./provision/loki/loki-config.yml:/etc/loki/config.yml:ro
+    ports:
+      - "${LOKI_PORT:-3100}:3100"
+
+  promtail:
+    image: grafana/promtail:2.9.8
+    container_name: promtail
+    restart: unless-stopped
+    command: -config.file=/etc/promtail/config.yml
+    volumes:
+      - ./provision/loki/promtail-config.yml:/etc/promtail/config.yml:ro
+      - /var/log:/var/log:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+
+  node_exporter:
+    image: prom/node-exporter:latest
+    container_name: node_exporter
+    restart: unless-stopped
+    network_mode: "host"
 
   cadvisor:
-    image: gcr.io/cadvisor/cadvisor:v0.49.1
+    image: gcr.io/cadvisor/cadvisor:latest
+    container_name: cadvisor
+    restart: unless-stopped
     privileged: true
-    # no host port needed; Prometheus scrapes via service name
+    ports:
+      - "8080:8080"
     volumes:
       - /:/rootfs:ro
       - /var/run:/var/run:ro
       - /sys:/sys:ro
       - /var/lib/docker/:/var/lib/docker:ro
-    networks: [monitoring]
-
-volumes:
-  hf-cache:
-  grafana-data:
-
-networks:
-  monitoring:

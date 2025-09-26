@@ -6,7 +6,7 @@ NREQ = 64
 
 async def one(session, i):
     payload = {
-        "model": "placeholder",
+        "model": "Qwen/Qwen2.5-1.5B-Instruct",
         "messages": [{"role":"user","content":f"Quick reply #{i}"}],
         "max_tokens": 64,
         "temperature": 0.2

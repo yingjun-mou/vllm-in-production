@@ -5,7 +5,7 @@ r = requests.post(
     f"{base}/v1/chat/completions",
     headers={"Content-Type":"application/json"},
     data=json.dumps({
-        "model": "placeholder",
+        "model": "Qwen/Qwen2.5-1.5B-Instruct",
         "messages": [{"role":"user","content":"Say hello from vLLM!"}],
         "max_tokens": 64,
         "temperature": 0.2

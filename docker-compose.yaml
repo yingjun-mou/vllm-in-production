@@ -89,8 +89,7 @@ services:
     container_name: cadvisor
     restart: unless-stopped
     privileged: true
-    ports:
-      - "8080:8080"
+    # no host port published; Prometheus scrapes cadvisor:8080 inside the compose network
     volumes:
       - /:/rootfs:ro
       - /var/run:/var/run:ro

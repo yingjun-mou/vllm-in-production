@@ -1,0 +1,19 @@
+{
+  "title": "System Overview",
+  "schemaVersion": 39,
+  "version": 1,
+  "panels": [
+    {
+      "type":"timeseries",
+      "title":"CPU %",
+      "targets":[{"expr":"100 - (avg by (instance)(irate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100)"}],
+      "gridPos":{"x":0,"y":0,"w":12,"h":8}
+    },
+    {
+      "type":"timeseries",
+      "title":"Memory Used (GB)",
+      "targets":[{"expr":"(node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes)/1024/1024/1024"}],
+      "gridPos":{"x":12,"y":0,"w":12,"h":8}
+    }
+  ]
+}

@@ -1,0 +1,18 @@
+groups:
+- name: vllm-alerts
+  rules:
+  - alert: HighGPUUtilization
+    expr: avg_over_time(nvidia_gpu_utilization[5m]) > 90
+    for: 10m
+    labels: { severity: warning }
+    annotations:
+      summary: "GPU util > 90% for 10m"
+      description: "Check batching or capacity."
+
+  - alert: SlowLatencyP95
+    expr: histogram_quantile(0.95, sum(rate(vllm_request_duration_seconds_bucket[5m])) by (le)) > 3
+    for: 10m
+    labels: { severity: warning }
+    annotations:
+      summary: "p95 > 3s"
+      description: "Investigate model load or traffic spikes."

@@ -6,14 +6,17 @@ A tiny production-shaped LLM service that uses vLLM as the model server (OpenAI-
 Single node architecture assuming using Cloud GPU (e.g. GCP).
 
 ```
-Laptop ──SSH tunnel──> GCE VM (GPU)
-│ │
-│ ├─ vllm: OpenAI‑compatible server (:8000)
-│ ├─ prometheus: scrapes metrics (:9090)
-│ ├─ grafana: dashboards (:3000)
-│ ├─ dcgm‑exporter: NVIDIA GPU metrics (:9400)
-│ ├─ node‑exporter: host metrics (:9100)
-│ └─ cAdvisor: container metrics (:8080)
+[Your Laptop]
+  |  SSH tunnels: 8000->vLLM, 3000->Grafana, 9090->Prometheus, 3100->Loki
+  v
+[ GCP GPU VM (Docker Compose) ]
+  ├─ vllm-openai  (GPU)  :8000
+  ├─ prometheus           :9090
+  ├─ grafana              :3000
+  ├─ loki                 :3100
+  ├─ promtail
+  ├─ node_exporter        :9100
+  └─ cadvisor             :8080
 ```
 
 ## Dev workflow
@@ -23,26 +26,31 @@ Code locally → `git push` → VM pulls container image (built by GitHub Action
 # Repo Layout
 
 ```
-.
-├─ docker-compose.yaml
+vllm-in-production/
+├─ README.md
 ├─ .env.example
-├─ deploy/
-│ ├─ bootstrap_vm.sh
-│ ├─ pull_and_restart.sh
-│ └─ systemd-watchtower.service
-├─ grafana/
-│ └─ provisioning/
-│ ├─ datasources/
-│ │ └─ prometheus.yml
-│ └─ dashboards/
-│ ├─ dashboards.yml
-│ └─ vllm_starter.json
-├─ prometheus/
-│ └─ prometheus.yml
-├─ client/
-│ └─ chat_example.py
-├─ .github/
-│ └─ workflows/
-│ └─ build-and-push.yml
-└─ README.md (this file)
+├─ .gitignore
+├─ docker-compose.yml
+├─ Makefile
+├─ deploy.sh
+├─ provision/
+│  ├─ grafana/
+│  │  ├─ dashboards/
+│  │  │  ├─ vllm-overview.json
+│  │  │  └─ system-overview.json
+│  │  └─ provisioning/
+│  │     ├─ dashboards/dashboards.yaml
+│  │     └─ datasources/datasources.yaml
+│  ├─ prometheus/
+│  │  ├─ prometheus.yml
+│  │  └─ alerting_rules.yml
+│  └─ loki/
+│     ├─ loki-config.yml
+│     └─ promtail-config.yml
+├─ app/
+│  ├─ client_test.py
+│  └─ load_test.py
+└─ .github/
+   └─ workflows/
+      └─ deploy.yml
 ```

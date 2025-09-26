@@ -60,6 +60,7 @@ services:
     command: -config.file=/etc/loki/config.yml
     volumes:
       - ./provision/loki/loki-config.yml:/etc/loki/config.yml:ro
+      - loki-data:/loki
     ports:
       - "${LOKI_PORT:-3100}:3100"
 
@@ -87,3 +88,7 @@ services:
       - /var/run:/var/run:ro
       - /sys:/sys:ro
       - /var/lib/docker/:/var/lib/docker:ro
+
+volumes:
+  loki-data:
+

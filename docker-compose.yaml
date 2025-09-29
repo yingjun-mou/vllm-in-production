@@ -12,20 +12,24 @@ services:
       - HF_TOKEN=${HF_TOKEN}
       - VLLM_LOGGING_LEVEL=INFO
       - VLLM_PROMETHEUS_ENABLE=true
-    command: >
-      --model ${MODEL_NAME:-Qwen/Qwen2.5-1.5B-Instruct}
-      --host 0.0.0.0 --port 8000
-      --max-model-len 2048
-      --tensor-parallel-size 1
-      --gpu-memory-utilization 0.80
-      --enable-prefix-caching
-      --max-num-seqs 8
     deploy:
       resources:
         reservations:
           devices:
-            - capabilities: [gpu]
+            - capabilities: ["gpu"]
+              count: -1
     runtime: nvidia
+    command: >
+      --model ${MODEL_NAME:-Qwen/Qwen2.5-1.5B-Instruct}
+      --served-model-name qwen
+      --host 0.0.0.0 --port 8000
+
+      --max-model-len 1024
+      --max-num-seqs 8
+      --gpu-memory-utilization 0.70
+
+      --enforce-eager
+      --enable-prefix-caching
 
   prometheus:
     image: prom/prometheus:latest

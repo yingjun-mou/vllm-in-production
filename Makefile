@@ -2,7 +2,6 @@
 # make init
 # make redeploy
 SHELL := /bin/bash
-ENV ?= .env
 init:
 	@test -f .env || cp .env.example .env || true
 
